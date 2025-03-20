@@ -2,9 +2,18 @@
 name = "sgs2"
 version = "0.1.0"
 description = "A pure Python interface for the Brazilian Central Bank's Time Series Management System (SGS) API"
-readme = "README.md"
-requires-python = ">=3.7"
-dependencies = [
-    "pandas>=1.1.5",
-    "requests>=2.27.1",
+authors = [
+    {name = "Renan Moretto",email = "renan_morettopereira@hotmail.com"}
 ]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas (>=2.2.3,<3.0.0)",
+    "requests (>=2.32.3,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
