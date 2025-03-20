@@ -1,7 +1,7 @@
 [project]
 name = "sgs2"
 version = "0.1.0"
-description = "Add your description here"
+description = "A pure Python interface for the Brazilian Central Bank's Time Series Management System (SGS) API"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [

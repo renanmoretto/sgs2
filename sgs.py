@@ -47,9 +47,41 @@ def _get_data(
 
 def series(
     code: Union[int, Dict[int, str]],
-    start: Optional[datetime.date] = None,
-    end: Optional[datetime.date] = None,
+    start: Optional[Union[datetime.date, str]] = None,
+    end: Optional[Union[datetime.date, str]] = None,
 ) -> pd.Series:
+    """Fetch a single time series from the Brazilian Central Bank's SGS.
+
+    Parameters
+    ----------
+    code : int or dict
+        If int, the code of the series to fetch.
+        If dict, a single key-value pair where key is the series code and value is the desired name.
+    start : datetime.date or str, optional
+        Start date for the series data. If string, must be in 'YYYY-MM-DD' format.
+        If None, fetches from the earliest available date.
+    end : datetime.date or str, optional
+        End date for the series data. If string, must be in 'YYYY-MM-DD' format.
+        If None, fetches until the latest available date.
+
+    Returns
+    -------
+    pandas.Series
+        A time series with dates as index and values as data.
+        The series name will be 'valor' for integer codes or the specified name for dict input.
+
+    Examples
+    --------
+    >>> sgs.series(12)  # Get CDI series with default name
+    >>> sgs.series({12: 'cdi'})  # Get CDI series with custom name
+    >>> sgs.series(12, start='2020-01-01')  # Get CDI from specific start date
+    >>> sgs.series(12, start='2015-01-01', end='2020-01-01')  # Get date range
+    """
+    if isinstance(start, str):
+        start = datetime.datetime.strptime(start, "%Y-%m-%d").date()
+    if isinstance(end, str):
+        end = datetime.datetime.strptime(end, "%Y-%m-%d").date()
+
     if isinstance(code, int):
         return _get_data(code, start, end)
 
@@ -66,9 +98,43 @@ def series(
 
 def dataframe(
     code: Union[int, List[int], Dict[int, str]],
-    start: Optional[datetime.date] = None,
-    end: Optional[datetime.date] = None,
+    start: Optional[Union[datetime.date, str]] = None,
+    end: Optional[Union[datetime.date, str]] = None,
 ) -> pd.DataFrame:
+    """Fetch one or multiple time series from the Brazilian Central Bank's SGS as a DataFrame.
+
+    Parameters
+    ----------
+    code : int or list or dict
+        If int, fetches a single series.
+        If list, fetches multiple series using the codes in the list.
+        If dict, fetches series using codes as keys and uses the values as column names.
+    start : datetime.date or str, optional
+        Start date for the series data. If string, must be in 'YYYY-MM-DD' format.
+        If None, fetches from the earliest available date.
+    end : datetime.date or str, optional
+        End date for the series data. If string, must be in 'YYYY-MM-DD' format.
+        If None, fetches until the latest available date.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame with dates as index and series values as columns.
+        Column names will be 'valor' for integer codes or the specified names for dict input.
+
+    Examples
+    --------
+    >>> sgs.dataframe(12)  # Single series
+    >>> sgs.dataframe([12, 433])  # Multiple series
+    >>> sgs.dataframe({12: 'cdi', 433: 'poupanca'})  # Multiple series with custom names
+    >>> sgs.dataframe(12, start='2020-01-01')  # From specific start date
+    >>> sgs.dataframe(12, start='2015-01-01', end='2020-01-01')  # Date range
+    """
+    if isinstance(start, str):
+        start = datetime.datetime.strptime(start, "%Y-%m-%d").date()
+    if isinstance(end, str):
+        end = datetime.datetime.strptime(end, "%Y-%m-%d").date()
+
     if isinstance(code, int):
         data = _get_data(code, start, end)
 
