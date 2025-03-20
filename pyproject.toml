@@ -3,7 +3,7 @@ name = "sgs2"
 version = "0.1.0"
 description = "A pure Python interface for the Brazilian Central Bank's Time Series Management System (SGS) API"
 authors = [
-    {name = "Renan Moretto",email = "renan_morettopereira@hotmail.com"}
+    {name = "Renan Moretto",email = "renan_moretto@outlook.com"}
 ]
 license = {text = "MIT"}
 readme = "README.md"

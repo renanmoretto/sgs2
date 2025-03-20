@@ -1,6 +1,6 @@
 # SGS2
 
-A pure Python interface for the Brazilian Central Bank's Time Series Management System (SGS) API.
+A lightweight Python library for fetching historical economic data from the Brazilian Central Bank's SGS system.
 
 ## Installation
 
