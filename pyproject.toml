@@ -9,8 +9,9 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "beautifulsoup4>=4.13.3",
     "pandas (>=2.2.3,<3.0.0)",
-    "requests (>=2.32.3,<3.0.0)"
+    "requests (>=2.32.3,<3.0.0)",
 ]
 
 

@@ -3,6 +3,7 @@ from typing import Optional, Union, Dict, List
 
 import requests
 import pandas as pd
+from bs4 import BeautifulSoup
 
 
 URL = "https://api.bcb.gov.br"
@@ -43,6 +44,23 @@ def _get_data(
     s.index.name = "data"
     s.name = rename_to or "valor"
     return s
+
+
+def _get_session(language: str) -> requests.Session:
+    """
+    Starts a session on SGS and get cookies requesting the initial page.
+
+    Parameters
+    ----------
+    language: str, "en" or "pt"
+        Language used for search and results.
+    """
+    session = requests.Session()
+    url = "https://www3.bcb.gov.br/sgspub/"
+    if language == "pt":
+        url += "index.jsp?idIdioma=P"
+    session.get(url)
+    return session
 
 
 def series(
@@ -151,3 +169,89 @@ def dataframe(
             data = pd.concat([data, single_data], axis=1)
 
     return data
+
+
+# search api
+
+
+def _search(query: Union[int, str], language: str = "pt") -> requests.Response:
+    """
+    Search time series by code or text.
+
+    Parameters
+    ----------
+    query: Union[int, str]
+        Code or text to search for
+    language: str, default "pt"
+        Language for search interface ("en" or "pt")
+
+    Returns
+    -------
+    requests.Response
+        Response from the search request
+    """
+    session = _get_session(language)
+    url = "https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do"
+
+    params = {
+        "method": "localizarSeriesPorCodigo"
+        if isinstance(query, int)
+        else "localizarSeriesPorTexto",
+        "periodicidade": 0,
+        "codigo": query if isinstance(query, int) else None,
+        "fonte": 341,
+        "texto": query if isinstance(query, str) else None,
+        "hdFiltro": None,
+        "hdOidGrupoSelecionado": None,
+        "hdSeqGrupoSelecionado": None,
+        "hdNomeGrupoSelecionado": None,
+        "hdTipoPesquisa": 4 if isinstance(query, int) else 6,
+        "hdTipoOrdenacao": 0,
+        "hdNumPagina": None,
+        "hdPeriodicidade": "Todas",
+        "hdSeriesMarcadas": None,
+        "hdMarcarTodos": None,
+        "hdFonte": None,
+        "hdOidSerieMetadados": None,
+        "hdNumeracao": None,
+        "hdOidSeriesLocalizadas": None,
+        "linkRetorno": "/sgspub/consultarvalores/telaCvsSelecionarSeries.paint",
+        "linkCriarFiltros": "/sgspub/manterfiltros/telaMfsCriarFiltro.paint",
+    }
+
+    response = session.post(url, params=params, timeout=10)
+    response.raise_for_status()
+    return response
+
+
+def _parse_metadata_data(r: requests.Response) -> List[Dict]:
+    soup = BeautifulSoup(r.text, "html.parser")
+    table = soup.find("table", id="tabelaSeries")
+    series_data = []
+    if table:
+        rows = table.find_all("tr")[1:]
+        for row in rows:
+            cols = row.find_all("td")
+            if cols:
+                series = {
+                    "code": cols[1].text.strip(),
+                    "name": cols[2].text.strip(),
+                    "unit": cols[3].text.strip(),
+                    "frequency": cols[4].text.strip(),
+                    "start_date": cols[5].text.strip(),
+                    "end_date": cols[6].text.strip(),
+                    "source_name": cols[7].text.strip(),
+                    "special": cols[8].text.strip(),
+                }
+                series_data.append(series)
+    return series_data
+
+
+def search(query: Union[int, str], language: str = "pt") -> List[Dict]:
+    r = _search(query, language)
+    return _parse_metadata_data(r)
+
+
+def metadata(code: int, language: str = "pt") -> Dict:
+    r = _search(code, language)
+    return _parse_metadata_data(r)[0]
