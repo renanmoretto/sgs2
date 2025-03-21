@@ -10,26 +10,49 @@ pip install sgs2
 
 ## Usage
 
-### Quick Start
+### `dataframe()`
+
+Fetch time series data as a pandas DataFrame.
 
 ```python
 import sgs2 as sgs
 
-# Get a time series as a pandas DataFrame
-sgs.dataframe(12)  # CDI (Brazilian Interbank Deposit Rate)
+# Get a single time series as a DataFrame
+df = sgs.dataframe(12)  # CDI (Brazilian Interbank Deposit Rate)
+# Returns a DataFrame with date as index and code as column name
 
 # Get data with a custom date range
-sgs.dataframe(12, start='2020-01-01', end='2021-01-01')
+df = sgs.dataframe(12, start='2020-01-01', end='2021-01-01')
+
+# Get multiple series at once
+df = sgs.dataframe([12, 433, 189])
+# Returns a DataFrame with date as index and codes as column names
 
 # Get multiple series with custom column names
-sgs.dataframe({433: 'ipca', 189: 'igpm'})
-
-# Get a single series as a pandas Series
-sgs.series(12)
-sgs.series({12: 'cdi'})  # With custom name
+df = sgs.dataframe({433: 'ipca', 189: 'igpm', 12: 'cdi'})
+# Returns a DataFrame with date as index and custom names as column names
 ```
 
-#### `json()`
+### `series()`
+
+Fetch a single time series as a pandas Series.
+
+```python
+import sgs2 as sgs
+
+# Get a single time series as a Series
+s = sgs.series(12)  # CDI (Brazilian Interbank Deposit Rate)
+# Returns a Series with date as index and values as data
+
+# Get data with a custom date range
+s = sgs.series(12, start='2020-01-01', end='2021-01-01')
+
+# Get a series with a custom name
+s = sgs.series({12: 'cdi'})
+# Returns a Series with date as index and 'cdi' as name
+```
+
+### `json()`
 
 Fetch the raw JSON data from the API.
 
@@ -50,7 +73,7 @@ sgs.json({12: 'cdi', 433: 'ipca', 189: 'igpm'})
 sgs.json([12, 433], start='2020-01-01', end='2021-01-01')
 ```
 
-#### `metadata()`
+### `metadata()`
 
 Fetch metadata about a series.
 
@@ -72,7 +95,7 @@ Example output:
 }
 ```
 
-#### `search()`
+### `search()`
 
 Search for series by keyword.
 
