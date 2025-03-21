@@ -39,10 +39,11 @@ def _get_data(
     data = _get_data_json(code, start, end)
     values = [v["valor"] for v in data]
     s = pd.Series(
-        pd.to_numeric(values), index=pd.to_datetime([v["data"] for v in data])
+        pd.to_numeric(values),
+        index=pd.to_datetime([v["data"] for v in data], format="%d/%m/%Y"),
     )
     s.index.name = "data"
-    s.name = rename_to or "valor"
+    s.name = rename_to or code
     return s
 
 
@@ -167,29 +168,54 @@ def dataframe(
         for c, name in code.items():
             single_data = _get_data(c, start, end, rename_to=name)
             data = pd.concat([data, single_data], axis=1)
-
+    data.index = pd.to_datetime(data.index)
+    data.index.name = "data"
     return data
+
+
+def json(
+    code: Union[int, List[int], Dict[int, str]],
+    start: Optional[datetime.date] = None,
+    end: Optional[datetime.date] = None,
+) -> List[dict]:
+    """Fetch time series data from the Brazilian Central Bank's SGS as JSON records.
+
+    Parameters
+    ----------
+    code : int or list or dict
+        If int, fetches a single series.
+        If list, fetches multiple series using the codes in the list.
+        If dict, fetches series using codes as keys and uses the values as column names.
+    start : datetime.date or str, optional
+        Start date for the series data. If string, must be in 'YYYY-MM-DD' format.
+        If None, fetches from the earliest available date.
+    end : datetime.date or str, optional
+        End date for the series data. If string, must be in 'YYYY-MM-DD' format.
+        If None, fetches until the latest available date.
+
+    Returns
+    -------
+    List[dict]
+        A list of dictionaries where each dictionary represents a date and its corresponding values.
+        Each dictionary contains 'data' (date) and one column per series with the value for that date.
+
+    Examples
+    --------
+    >>> sgs.json(12)  # Single series
+    >>> sgs.json([12, 433])  # Multiple series
+    >>> sgs.json({12: 'cdi', 433: 'ipca'})  # Multiple series with custom names
+    >>> sgs.json(12, start='2020-01-01')  # From specific start date
+    >>> sgs.json(12, start='2015-01-01', end='2020-01-01')  # Date range
+    """
+    data = dataframe(code, start, end)
+    data.index = data.index.strftime("%Y-%m-%d")
+    return data.reset_index().to_dict("records")
 
 
 # search api
 
 
 def _search(query: Union[int, str], language: str = "pt") -> requests.Response:
-    """
-    Search time series by code or text.
-
-    Parameters
-    ----------
-    query: Union[int, str]
-        Code or text to search for
-    language: str, default "pt"
-        Language for search interface ("en" or "pt")
-
-    Returns
-    -------
-    requests.Response
-        Response from the search request
-    """
     session = _get_session(language)
     url = "https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do"
 
@@ -248,10 +274,52 @@ def _parse_metadata_data(r: requests.Response) -> List[Dict]:
 
 
 def search(query: Union[int, str], language: str = "pt") -> List[Dict]:
+    """Search for time series in the Brazilian Central Bank's SGS by code or keyword.
+
+    Parameters
+    ----------
+    query : int or str
+        If int, searches for a specific series code.
+        If str, searches for series containing the keyword in their name.
+    language : str, default "pt"
+        Language for search interface and results. Options are "pt" for Portuguese or "en" for English.
+
+    Returns
+    -------
+    List[Dict]
+        A list of dictionaries where each dictionary contains metadata about a matching series.
+        Each dictionary includes: code, name, unit, frequency, start_date, end_date, source_name, and special.
+
+    Examples
+    --------
+    >>> sgs.search("cdi")  # Search by keyword
+    >>> sgs.search(12)  # Search by code
+    >>> sgs.search("inflation", language="en")  # Search in English
+    """
     r = _search(query, language)
     return _parse_metadata_data(r)
 
 
 def metadata(code: int, language: str = "pt") -> Dict:
+    """Fetch metadata about a specific time series from the Brazilian Central Bank's SGS.
+
+    Parameters
+    ----------
+    code : int
+        The code of the series to fetch metadata for.
+    language : str, default "pt"
+        Language for the metadata results. Options are "pt" for Portuguese or "en" for English.
+
+    Returns
+    -------
+    Dict
+        A dictionary containing metadata about the series, including:
+        code, name, unit, frequency, start_date, end_date, source_name, and special.
+
+    Examples
+    --------
+    >>> sgs.metadata(12)  # Get metadata for CDI series
+    >>> sgs.metadata(433, language="en")  # Get metadata for IPCA series in English
+    """
     r = _search(code, language)
     return _parse_metadata_data(r)[0]
